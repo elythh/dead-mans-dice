@@ -143,6 +143,7 @@ function send(ws, msg) {
 function broadcastState(room) {
   const state = room.publicState();
   for (const p of room.players.values()) send(p.ws, { type: 'roomState', state });
+  broadcastLobbyList();
 }
 
 function sendYourDice(room, player) {
@@ -151,6 +152,29 @@ function sendYourDice(room, player) {
 
 function sendError(ws, message) {
   send(ws, { type: 'error', message });
+}
+
+function openRoomList() {
+  const list = [];
+  for (const room of rooms.values()) {
+    if (room.phase === 'lobby' && room.order.length < MAX_PLAYERS) {
+      const host = room.players.get(room.hostToken);
+      list.push({
+        code: room.code,
+        hostName: host ? host.name : '?',
+        playerCount: room.order.length,
+        maxPlayers: MAX_PLAYERS,
+      });
+    }
+  }
+  return list;
+}
+
+function broadcastLobbyList() {
+  const list = openRoomList();
+  for (const ws of wss.clients) {
+    if (!ws.roomCode) send(ws, { type: 'roomList', rooms: list });
+  }
 }
 
 function startRound(room, starterToken) {
@@ -368,14 +392,22 @@ function handleChallengeMsg(ws, kind) {
 
 function handleLeave(ws) {
   const room = rooms.get(ws.roomCode);
-  if (!room) return;
-  const player = room.players.get(ws.token);
-  if (player) {
-    player.connected = false;
-    player.ws = null;
-    room.addLog(`${player.name} descend sous le pont.`);
-    broadcastState(room);
+  if (room) {
+    const player = room.players.get(ws.token);
+    if (player) {
+      player.connected = false;
+      player.ws = null;
+      room.addLog(`${player.name} descend sous le pont.`);
+      broadcastState(room);
+    }
   }
+  ws.roomCode = null;
+  ws.token = null;
+  send(ws, { type: 'roomList', rooms: openRoomList() });
+}
+
+function handleListRooms(ws) {
+  send(ws, { type: 'roomList', rooms: openRoomList() });
 }
 
 function handleChat(ws, msg) {
@@ -422,6 +454,7 @@ wss.on('connection', (ws) => {
         case 'spoton': handleChallengeMsg(ws, 'spoton'); break;
         case 'leave': handleLeave(ws); break;
         case 'chat': handleChat(ws, msg); break;
+        case 'listRooms': handleListRooms(ws); break;
         default: break;
       }
     } catch (e) {

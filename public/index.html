@@ -99,6 +99,21 @@ input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-off
 .landing-status{text-align:center; color:var(--ink-soft); font-style:italic; min-height:1.4em;}
 .landing-status[data-tone="danger"]{color:var(--bad); font-style:normal; font-weight:600;}
 
+.open-rooms{margin-top:18px;}
+.open-rooms-title{
+  font-family:"Pirata One", serif; font-size:1.05rem; margin:0 0 8px; text-align:center;
+  color:var(--gold-bright); text-wrap:balance;
+}
+.open-rooms-list{display:flex; flex-direction:column; gap:8px;}
+.open-room-row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  background:var(--bg-deep); border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+}
+.open-room-info{display:flex; flex-direction:column; gap:1px; min-width:0;}
+.open-room-name{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.open-room-count{font-size:0.82rem; color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+.open-rooms-empty{color:var(--ink-soft); font-style:italic; font-size:0.9rem; text-align:center;}
+
 /* Lobby */
 .room-code{
   font-family:"Pirata One", serif; font-size:2.2rem; letter-spacing:0.12em; text-align:center;
@@ -297,6 +312,10 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
       </div>
     </div>
     <p class="landing-status" id="landingStatus"></p>
+    <div class="open-rooms">
+      <h3 class="open-rooms-title">Équipages ouverts</h3>
+      <div class="open-rooms-list" id="openRoomsList"></div>
+    </div>
   </section>
 
   <!-- Lobby -->
@@ -446,6 +465,8 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     if(session && session.token && session.roomCode){
       myToken = session.token; myRoomCode = session.roomCode;
       send({type:'join', roomCode: session.roomCode, token: session.token, name: session.name || ''});
+    } else {
+      send({type:'listRooms'});
     }
   }
 
@@ -482,6 +503,8 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     } else if(msg.type==='yourDice'){
       myDice = msg.dice;
       renderYourDice();
+    } else if(msg.type==='roomList'){
+      renderOpenRooms(msg.rooms);
     } else if(msg.type==='reveal'){
       showReveal(msg);
     } else if(msg.type==='error'){
@@ -498,15 +521,38 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     saveSession({ name, token:null, roomCode:null });
     send({type:'join', create:true, name});
   });
-  el('joinBtn').addEventListener('click', ()=>{
+  function attemptJoin(code){
     const name = el('joinName').value.trim();
-    const code = el('joinCode').value.trim().toUpperCase();
-    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); return; }
+    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); el('joinName').focus(); return; }
     if(!code){ setLandingStatus('Entre le code de la salle.', 'danger'); return; }
+    el('joinCode').value = code;
     saveSession({ name, token:null, roomCode:null });
     send({type:'join', roomCode: code, name});
-  });
+  }
+  el('joinBtn').addEventListener('click', ()=> attemptJoin(el('joinCode').value.trim().toUpperCase()));
   el('joinCode').addEventListener('input', (e)=>{ e.target.value = e.target.value.toUpperCase(); });
+
+  function renderOpenRooms(rooms){
+    const list = el('openRoomsList');
+    list.innerHTML = '';
+    if(!rooms || rooms.length===0){
+      const empty = document.createElement('div'); empty.className='open-rooms-empty';
+      empty.textContent = 'Aucune partie en cours — lance la tienne !';
+      list.appendChild(empty);
+      return;
+    }
+    rooms.forEach(r=>{
+      const row=document.createElement('div'); row.className='open-room-row';
+      const info=document.createElement('div'); info.className='open-room-info';
+      const name=document.createElement('span'); name.className='open-room-name'; name.textContent="Équipage de "+r.hostName;
+      const count=document.createElement('span'); count.className='open-room-count'; count.textContent=r.playerCount+'/'+r.maxPlayers+' marins';
+      info.appendChild(name); info.appendChild(count);
+      const btn=document.createElement('button'); btn.type='button'; btn.className='btn plain'; btn.textContent='Rejoindre';
+      btn.addEventListener('click', ()=> attemptJoin(r.code));
+      row.appendChild(info); row.appendChild(btn);
+      list.appendChild(row);
+    });
+  }
 
   el('startBtn').addEventListener('click', ()=> send({type:'start'}));
   el('leaveLobbyBtn').addEventListener('click', leaveRoom);
@@ -523,6 +569,7 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     showScreen('landing');
     el('chatPanel').hidden = true;
     el('chatLog').innerHTML = '';
+    send({type:'listRooms'});
   }
 
   el('chatForm').addEventListener('submit', (e)=>{
