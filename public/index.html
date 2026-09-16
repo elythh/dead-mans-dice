@@ -74,10 +74,8 @@ h1{
 [hidden]{display:none !important;}
 
 /* Landing */
-.landing-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-@media (max-width:520px){ .landing-grid{grid-template-columns:1fr;} }
 .panel{background:var(--bg-deep); border:1px solid var(--line); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;}
-.panel h2{font-family:"Pirata One", serif; font-size:1.3rem; margin:0; color:var(--gold-bright);}
+.name-panel{max-width:360px; margin:0 auto;}
 label{font-size:0.85rem; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px;}
 input[type=text]{
   font-family:inherit; font-size:1.05rem; padding:8px 10px; border-radius:8px;
@@ -302,24 +300,11 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
 
   <!-- Landing -->
   <section class="card" id="screen-landing">
-    <div class="landing-grid">
-      <div class="panel">
-        <h2>Créer un équipage</h2>
-        <label>Ton nom
-          <input type="text" id="createName" maxlength="24" placeholder="Bootstrap Bill">
-        </label>
-        <button class="btn raise" id="createBtn">Lever l'ancre</button>
-      </div>
-      <div class="panel">
-        <h2>Rejoindre un équipage</h2>
-        <label>Ton nom
-          <input type="text" id="joinName" maxlength="24" placeholder="Will Turner">
-        </label>
-        <label>Code de la salle
-          <input type="text" id="joinCode" maxlength="4" placeholder="ABCD" style="text-transform:uppercase;">
-        </label>
-        <button class="btn raise" id="joinBtn">Monter à bord</button>
-      </div>
+    <div class="panel name-panel">
+      <label>Ton nom
+        <input type="text" id="playerName" maxlength="24" placeholder="Bootstrap Bill">
+      </label>
+      <button class="btn raise" id="createBtn">Lever l'ancre</button>
     </div>
     <p class="landing-status" id="landingStatus"></p>
     <div class="open-rooms">
@@ -505,8 +490,8 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     try{ msg = JSON.parse(ev.data); }catch(_){ return; }
     if(msg.type==='joined'){
       myToken = msg.token; myRoomCode = msg.roomCode;
-      const nameField = document.activeElement===el('joinName') ? el('joinName').value : el('createName').value;
-      saveSession({ token: myToken, roomCode: myRoomCode, name: (loadSession()&&loadSession().name) || nameField || '' });
+      const name = (loadSession()&&loadSession().name) || el('playerName').value.trim() || '';
+      saveSession({ token: myToken, roomCode: myRoomCode, name });
     } else if(msg.type==='roomState'){
       latestState = msg.state;
       render();
@@ -533,21 +518,17 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
   }
 
   el('createBtn').addEventListener('click', ()=>{
-    const name = el('createName').value.trim();
-    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); return; }
+    const name = el('playerName').value.trim();
+    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); el('playerName').focus(); return; }
     saveSession({ name, token:null, roomCode:null });
     send({type:'join', create:true, name});
   });
   function attemptJoin(code){
-    const name = el('joinName').value.trim();
-    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); el('joinName').focus(); return; }
-    if(!code){ setLandingStatus('Entre le code de la salle.', 'danger'); return; }
-    el('joinCode').value = code;
+    const name = el('playerName').value.trim();
+    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); el('playerName').focus(); return; }
     saveSession({ name, token:null, roomCode:null });
     send({type:'join', roomCode: code, name});
   }
-  el('joinBtn').addEventListener('click', ()=> attemptJoin(el('joinCode').value.trim().toUpperCase()));
-  el('joinCode').addEventListener('input', (e)=>{ e.target.value = e.target.value.toUpperCase(); });
 
   function renderOpenRooms(rooms){
     const list = el('openRoomsList');
