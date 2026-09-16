@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les Dés de l'Homme Mort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  color-scheme: light dark;
+  --bg:#e9dcb8;
+  --bg-deep:#d8c491;
+  --panel:#efe3c2;
+  --ink:#2b1d10;
+  --ink-soft:#5c4728;
+  --gold:#a3781f;
+  --gold-bright:#c99a2e;
+  --blood:#7a2020;
+  --blood-bright:#96302c;
+  --sea:#1f3d3a;
+  --sea-bright:#2c534e;
+  --line:rgba(43,29,16,0.28);
+  --die-face:#f4ecd8;
+  --die-pip:#2b1d10;
+  --die-hidden:#3a2a18;
+  --die-hidden-pip:#8a6a3a;
+  --shadow:rgba(30,20,8,0.35);
+  --good:#2c534e;
+  --bad:#96302c;
+  --offline:#8a7a56;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1c1a; --bg-deep:#0a1513; --panel:#16251f; --ink:#e9dcb8; --ink-soft:#b9a97e;
+    --gold:#d1a53d; --gold-bright:#e6bc52; --blood:#c0453f; --blood-bright:#d85f57;
+    --sea:#0b1917; --sea-bright:#123028; --line:rgba(233,220,184,0.16);
+    --die-face:#efe3c2; --die-pip:#20160a; --die-hidden:#0b1917; --die-hidden-pip:#3f5a4f;
+    --shadow:rgba(0,0,0,0.55); --good:#7fd8c4; --bad:#e6817c; --offline:#a99a72;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1c1a; --bg-deep:#0a1513; --panel:#16251f; --ink:#e9dcb8; --ink-soft:#b9a97e;
+  --gold:#d1a53d; --gold-bright:#e6bc52; --blood:#c0453f; --blood-bright:#d85f57;
+  --sea:#0b1917; --sea-bright:#123028; --line:rgba(233,220,184,0.16);
+  --die-face:#efe3c2; --die-pip:#20160a; --die-hidden:#0b1917; --die-hidden-pip:#3f5a4f;
+  --shadow:rgba(0,0,0,0.55); --good:#7fd8c4; --bad:#e6817c; --offline:#a99a72;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background: radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 60%), var(--bg);
+  color:var(--ink);
+  font-family:"Crimson Text", Georgia, "Times New Roman", serif;
+  padding-block:32px;
+  padding-inline:16px;
+  display:flex;
+  justify-content:center;
+}
+.wrap{width:100%; max-width:640px; display:flex; flex-direction:column; gap:18px;}
+header{text-align:center; display:flex; flex-direction:column; gap:4px;}
+h1{
+  font-family:"Pirata One", serif; font-size:clamp(2.1rem, 7vw, 3rem); margin:0;
+  letter-spacing:0.03em; color:var(--gold-bright); text-shadow:0 2px 0 var(--shadow); text-wrap:balance;
+}
+.tagline{margin:0; color:var(--ink-soft); font-style:italic; font-size:1.05rem;}
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:16px;
+  box-shadow:0 12px 30px -14px var(--shadow); padding:22px 24px;
+}
+[hidden]{display:none !important;}
+
+/* Landing */
+.landing-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media (max-width:520px){ .landing-grid{grid-template-columns:1fr;} }
+.panel{background:var(--bg-deep); border:1px solid var(--line); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;}
+.panel h2{font-family:"Pirata One", serif; font-size:1.3rem; margin:0; color:var(--gold-bright);}
+label{font-size:0.85rem; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px;}
+input[type=text]{
+  font-family:inherit; font-size:1.05rem; padding:8px 10px; border-radius:8px;
+  border:1px solid var(--line); background:var(--panel); color:var(--ink);
+}
+input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-offset:1px;}
+.btn{
+  font-family:"Crimson Text", serif; font-variant:small-caps; letter-spacing:0.03em;
+  font-size:1.02rem; font-weight:700; padding:10px 18px; border-radius:10px;
+  border:1px solid transparent; cursor:pointer; color:#f4ecd8;
+}
+.btn:disabled{opacity:0.4; cursor:not-allowed;}
+.btn.raise{background:var(--sea); border-color:var(--sea-bright);}
+.btn.raise:hover:not(:disabled){background:var(--sea-bright);}
+.btn.liar{background:var(--blood); border-color:var(--blood-bright);}
+.btn.liar:hover:not(:disabled){background:var(--blood-bright);}
+.btn.spoton{background:var(--gold); border-color:var(--gold-bright); color:#2b1d10;}
+.btn.spoton:hover:not(:disabled){background:var(--gold-bright);}
+.btn.plain{background:var(--bg-deep); color:var(--ink); border-color:var(--line);}
+.btn.plain:hover{border-color:var(--gold);}
+.btn:focus-visible{outline:2px solid var(--gold-bright); outline-offset:2px;}
+.landing-status{text-align:center; color:var(--ink-soft); font-style:italic; min-height:1.4em;}
+.landing-status[data-tone="danger"]{color:var(--bad); font-style:normal; font-weight:600;}
+
+/* Lobby */
+.room-code{
+  font-family:"Pirata One", serif; font-size:2.2rem; letter-spacing:0.12em; text-align:center;
+  color:var(--gold-bright); background:var(--bg-deep); border-radius:10px; padding:10px; border:1px dashed var(--line);
+}
+.room-hint{text-align:center; color:var(--ink-soft); font-size:0.9rem; margin-top:-6px;}
+.crew-list{display:flex; flex-direction:column; gap:8px; margin:14px 0;}
+.crew-item{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--bg-deep); border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+}
+.crew-item .who{display:flex; align-items:center; gap:8px;}
+.dot{width:9px; height:9px; border-radius:50%; background:var(--good); flex-shrink:0;}
+.dot.off{background:var(--offline);}
+.host-tag{font-size:0.75rem; color:var(--gold-bright); border:1px solid var(--gold); border-radius:999px; padding:1px 8px;}
+.kick-btn{background:none; border:1px solid var(--line); color:var(--ink-soft); border-radius:6px; padding:2px 8px; font-size:0.8rem; cursor:pointer;}
+.kick-btn:hover{border-color:var(--blood); color:var(--blood-bright);}
+
+/* Game */
+.opponents{display:flex; flex-direction:column; gap:2px;}
+.opp-row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px 14px; border-bottom:1px solid var(--line);
+}
+.opp-row:first-child{border-top-left-radius:12px; border-top-right-radius:12px;}
+.opp-row.turn{background:color-mix(in srgb, var(--gold) 14%, transparent);}
+.opp-row.dead{opacity:0.45;}
+.opp-name{font-family:"Pirata One", serif; font-size:1.05rem; display:flex; align-items:center; gap:6px; min-width:0;}
+.opp-name span.txt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.opp-dice{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
+.mini-die{
+  width:22px; height:22px; border-radius:5px; background:var(--die-hidden);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:3px;
+}
+.mini-die .pip{width:3px;height:3px;border-radius:50%;background:var(--die-hidden-pip); align-self:center; justify-self:center; opacity:1;}
+.mini-die.revealed{background:var(--die-face);}
+.mini-die.revealed .pip{background:var(--die-pip); opacity:0;}
+.mini-die.revealed[data-p1] .p1, .mini-die.revealed[data-p2] .p2, .mini-die.revealed[data-p3] .p3, .mini-die.revealed[data-p4] .p4,
+.mini-die.revealed[data-p5] .p5, .mini-die.revealed[data-p6] .p6, .mini-die.revealed[data-p7] .p7, .mini-die.revealed[data-p8] .p8, .mini-die.revealed[data-p9] .p9{opacity:1;}
+
+.ledger{
+  padding:12px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  max-height:130px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; font-size:0.92rem; color:var(--ink-soft);
+}
+.ledger::-webkit-scrollbar{width:8px;}
+.ledger::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+
+.status-bar{padding:10px 16px; font-style:italic; color:var(--ink-soft); min-height:1.4em; text-align:center;}
+.status-bar[data-tone="danger"]{color:var(--bad); font-style:normal; font-weight:600;}
+.status-bar[data-tone="good"]{color:var(--good); font-style:normal; font-weight:600;}
+
+.you-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px;}
+.you-label{display:flex; flex-direction:column; gap:2px; min-width:90px;}
+.you-name{font-family:"Pirata One", serif; font-size:1.15rem;}
+.you-count{font-size:0.85rem; color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+.dice-row{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+.die{
+  width:42px;height:42px; border-radius:8px; background:var(--die-face);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15), 0 3px 0 rgba(0,0,0,0.25);
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:6px; flex-shrink:0;
+}
+.die .pip{width:8px;height:8px;border-radius:50%;background:var(--die-pip); align-self:center; justify-self:center; opacity:0;}
+.die[data-p1] .p1, .die[data-p2] .p2, .die[data-p3] .p3, .die[data-p4] .p4,
+.die[data-p5] .p5, .die[data-p6] .p6, .die[data-p7] .p7, .die[data-p8] .p8, .die[data-p9] .p9{opacity:1;}
+.die.face1{outline:2px solid color-mix(in srgb, var(--gold) 70%, transparent); outline-offset:1px;}
+
+.controls{padding:16px 20px 20px; display:flex; flex-direction:column; gap:14px;}
+.bid-builder{display:flex; align-items:center; gap:14px; flex-wrap:wrap; justify-content:center;}
+.qty-stepper{display:flex; align-items:center; gap:8px;}
+.qty-stepper button{
+  width:34px;height:34px; border-radius:8px; border:1px solid var(--line); background:var(--bg-deep);
+  color:var(--ink); font-size:1.2rem; cursor:pointer; font-family:inherit; line-height:1;
+}
+.qty-stepper button:hover:not(:disabled){border-color:var(--gold); color:var(--gold-bright);}
+.qty-stepper button:disabled{opacity:0.4; cursor:not-allowed;}
+.qty-display{min-width:2.4ch; text-align:center; font-size:1.4rem; font-variant-numeric:tabular-nums; font-weight:700;}
+.face-picker{display:flex; gap:6px; flex-wrap:wrap; justify-content:center;}
+.face-btn{
+  width:38px;height:38px; border-radius:8px; border:1px solid var(--line); background:var(--bg-deep);
+  cursor:pointer; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:5px;
+}
+.face-btn .pip{width:6px;height:6px;border-radius:50%;background:var(--ink-soft);opacity:0; align-self:center; justify-self:center;}
+.face-btn[data-p1] .p1, .face-btn[data-p2] .p2, .face-btn[data-p3] .p3, .face-btn[data-p4] .p4,
+.face-btn[data-p5] .p5, .face-btn[data-p6] .p6, .face-btn[data-p7] .p7, .face-btn[data-p8] .p8, .face-btn[data-p9] .p9{opacity:1;}
+.face-btn.selected{border-color:var(--gold-bright); background:color-mix(in srgb, var(--gold) 18%, var(--bg-deep)); box-shadow:0 0 0 2px color-mix(in srgb, var(--gold) 40%, transparent);}
+.face-btn.selected .pip{background:var(--gold-bright);}
+.face-btn:disabled, .qty-stepper button:disabled{opacity:0.35;}
+.face-btn:focus-visible, .qty-stepper button:focus-visible, .btn:focus-visible{outline:2px solid var(--gold-bright); outline-offset:2px;}
+.action-row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
+
+.overlay{position:fixed; inset:0; background:rgba(10,8,4,0.55); display:flex; align-items:center; justify-content:center; padding:20px; z-index:10;}
+.overlay .card{max-width:460px; width:100%; text-align:center;}
+.overlay .card h2{font-family:"Pirata One", serif; font-size:1.8rem; margin:0 0 8px; color:var(--gold-bright);}
+.overlay .card p{color:var(--ink-soft); line-height:1.5;}
+.reveal-grid{display:flex; flex-direction:column; gap:8px; margin:14px 0; text-align:left;}
+.reveal-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.reveal-row .name{min-width:100px; font-weight:700; font-family:"Pirata One", serif;}
+
+footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;}
+.rules{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px; font-size:0.95rem; line-height:1.5; color:var(--ink-soft);}
+.rules b{color:var(--ink);}
+.rules-toggle{align-self:center; margin:6px auto 0; display:block; background:none; border:1px solid var(--line); color:var(--ink-soft); border-radius:999px; padding:4px 14px; font-family:inherit; font-size:0.85rem; cursor:pointer;}
+.rules-toggle:hover{border-color:var(--gold); color:var(--gold-bright);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Les Dés de l'Homme Mort</h1>
+    <p class="tagline">Le jeu de dés du menteur, comme à bord du Hollandais Volant — rassemble ton équipage.</p>
+    <button class="rules-toggle" id="rulesToggle" aria-expanded="false" aria-controls="rules">Comment jouer</button>
+  </header>
+
+  <div class="rules" id="rules" hidden>
+    <p><b>Les as sont fous.</b> Chaque joueur lance cinq dés en secret. Une mise annonce une quantité et une face — tu prétends qu'au moins ce nombre de dés montre cette face, <i>tous joueurs confondus</i>, et un dé montrant 1 compte pour n'importe quelle face (sauf si la mise porte elle-même sur les as).</p>
+    <p>À ton tour, soit tu <b>relances</b> la mise (une quantité plus grande, ou la même quantité sur une face plus forte), soit tu cries <b>« Menteur ! »</b> si tu doutes de la dernière mise, soit tu tentes <b>« Dans le mille ! »</b> si tu penses qu'elle est exacte.</p>
+    <p>Perdre un défi coûte un dé. Un « Dans le mille ! » raté coûte un dé à celui qui l'a tenté ; un « Dans le mille ! » réussi coûte un dé à tous les autres. Le dernier marin encore en jeu remporte la partie.</p>
+  </div>
+
+  <!-- Landing -->
+  <section class="card" id="screen-landing">
+    <div class="landing-grid">
+      <div class="panel">
+        <h2>Créer un équipage</h2>
+        <label>Ton nom
+          <input type="text" id="createName" maxlength="24" placeholder="Bootstrap Bill">
+        </label>
+        <button class="btn raise" id="createBtn">Lever l'ancre</button>
+      </div>
+      <div class="panel">
+        <h2>Rejoindre un équipage</h2>
+        <label>Ton nom
+          <input type="text" id="joinName" maxlength="24" placeholder="Will Turner">
+        </label>
+        <label>Code de la salle
+          <input type="text" id="joinCode" maxlength="4" placeholder="ABCD" style="text-transform:uppercase;">
+        </label>
+        <button class="btn raise" id="joinBtn">Monter à bord</button>
+      </div>
+    </div>
+    <p class="landing-status" id="landingStatus"></p>
+  </section>
+
+  <!-- Lobby -->
+  <section class="card" id="screen-lobby" hidden>
+    <h2 style="font-family:'Pirata One',serif; text-align:center; color:var(--gold-bright); margin-top:0;">L'équipage se rassemble</h2>
+    <div class="room-code" id="roomCodeDisplay">----</div>
+    <p class="room-hint">Partage ce code — tes amis rejoignent depuis cette même page.</p>
+    <div class="crew-list" id="crewList"></div>
+    <div style="display:flex; gap:10px; justify-content:center;">
+      <button class="btn raise" id="startBtn">Lancer la partie</button>
+      <button class="btn plain" id="leaveLobbyBtn">Quitter</button>
+    </div>
+    <p class="landing-status" id="lobbyStatus"></p>
+  </section>
+
+  <!-- Game -->
+  <section id="screen-game" hidden>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="opponents" id="opponentsList"></div>
+      <div class="ledger" id="ledger" aria-live="polite"></div>
+      <div class="status-bar" id="statusBar" aria-live="polite"></div>
+      <div class="you-row">
+        <div class="you-label">
+          <span class="you-name" id="youName">Toi</span>
+          <span class="you-count" id="youCount">5 dés</span>
+        </div>
+        <div class="dice-row" id="youDiceRow"></div>
+      </div>
+      <div class="controls">
+        <div class="bid-builder">
+          <div class="qty-stepper">
+            <button type="button" id="qtyMinus" aria-label="Diminuer la quantité">−</button>
+            <span class="qty-display" id="qtyDisplay">1</span>
+            <button type="button" id="qtyPlus" aria-label="Augmenter la quantité">+</button>
+          </div>
+          <div class="face-picker" id="facePicker" role="group" aria-label="Choisis une face pour ta mise"></div>
+        </div>
+        <div class="action-row">
+          <button type="button" class="btn raise" id="bidBtn">Enchérir</button>
+          <button type="button" class="btn liar" id="liarBtn">Menteur !</button>
+          <button type="button" class="btn spoton" id="spotonBtn">Dans le mille !</button>
+          <button type="button" class="btn plain" id="leaveGameBtn">Quitter</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Hommage auto-hébergé à la scène du jeu de dés du menteur à bord du Hollandais Volant — inspiré de, mais non affilié à, Pirates des Caraïbes de Disney.</footer>
+</div>
+
+<div class="overlay" id="revealOverlay" hidden>
+  <div class="card">
+    <h2>Les dés sont dévoilés</h2>
+    <div class="reveal-grid" id="revealGrid"></div>
+    <p id="revealResult"></p>
+  </div>
+</div>
+
+<div class="overlay" id="gameoverOverlay" hidden>
+  <div class="card">
+    <h2 id="gameoverTitle">Tu as gagné !</h2>
+    <p id="gameoverText"></p>
+    <button type="button" class="btn raise" id="rematchBtn">Reprendre la mer</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const PIP_LAYOUT = { 1:[5], 2:[1,9], 3:[1,5,9], 4:[1,3,7,9], 5:[1,3,5,7,9], 6:[1,3,4,6,7,9] };
+  function faceLabel(f){ return f===1 ? "As (fou)" : String(f); }
+  function rank(f){ return f===1 ? 7 : f; }
+
+  const STORE_KEY = 'deadmansdice_session';
+  function loadSession(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); }catch(_){ return null; } }
+  function saveSession(s){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }catch(_){} }
+  function clearSession(){ try{ localStorage.removeItem(STORE_KEY); }catch(_){} }
+
+  const el = (id)=>document.getElementById(id);
+  const screens = { landing: el('screen-landing'), lobby: el('screen-lobby'), game: el('screen-game') };
+  function showScreen(name){
+    Object.entries(screens).forEach(([k,node])=> node.hidden = (k!==name));
+  }
+
+  el('rulesToggle').addEventListener('click', ()=>{
+    const open = el('rules').hasAttribute('hidden');
+    if(open) el('rules').removeAttribute('hidden'); else el('rules').setAttribute('hidden','');
+    el('rulesToggle').setAttribute('aria-expanded', String(open));
+  });
+
+  let ws;
+  let myToken = null;
+  let myRoomCode = null;
+  let latestState = null;
+  let myDice = [];
+  let selQty = 1, selFace = 2;
+
+  function wsUrl(){
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    return proto + location.host + '/ws';
+  }
+
+  function connect(){
+    ws = new WebSocket(wsUrl());
+    ws.addEventListener('open', onOpen);
+    ws.addEventListener('message', onMessage);
+    ws.addEventListener('close', onClose);
+  }
+
+  function onOpen(){
+    const session = loadSession();
+    if(session && session.token && session.roomCode){
+      myToken = session.token; myRoomCode = session.roomCode;
+      send({type:'join', roomCode: session.roomCode, token: session.token, name: session.name || ''});
+    }
+  }
+
+  function onClose(){
+    setLandingStatus('Connexion perdue — reconnexion…', 'danger');
+    setTimeout(connect, 1500);
+  }
+
+  function send(msg){ if(ws && ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify(msg)); }
+
+  function setLandingStatus(text, tone){
+    const n = el('landingStatus'); n.textContent=text||'';
+    if(tone) n.dataset.tone=tone; else delete n.dataset.tone;
+  }
+  function setLobbyStatus(text, tone){
+    const n = el('lobbyStatus'); n.textContent=text||'';
+    if(tone) n.dataset.tone=tone; else delete n.dataset.tone;
+  }
+  function setStatus(text, tone){
+    const n = el('statusBar'); n.textContent=text||'';
+    if(tone) n.dataset.tone=tone; else delete n.dataset.tone;
+  }
+
+  function onMessage(ev){
+    let msg;
+    try{ msg = JSON.parse(ev.data); }catch(_){ return; }
+    if(msg.type==='joined'){
+      myToken = msg.token; myRoomCode = msg.roomCode;
+      const nameField = document.activeElement===el('joinName') ? el('joinName').value : el('createName').value;
+      saveSession({ token: myToken, roomCode: myRoomCode, name: (loadSession()&&loadSession().name) || nameField || '' });
+    } else if(msg.type==='roomState'){
+      latestState = msg.state;
+      render();
+    } else if(msg.type==='yourDice'){
+      myDice = msg.dice;
+      renderYourDice();
+    } else if(msg.type==='reveal'){
+      showReveal(msg);
+    } else if(msg.type==='error'){
+      if(screens.landing.hidden===false) setLandingStatus(msg.message,'danger');
+      else if(screens.lobby.hidden===false) setLobbyStatus(msg.message,'danger');
+      else setStatus(msg.message,'danger');
+      if(/aucun équipage|déjà pris la mer|au complet/i.test(msg.message)){ clearSession(); }
+    }
+  }
+
+  el('createBtn').addEventListener('click', ()=>{
+    const name = el('createName').value.trim();
+    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); return; }
+    saveSession({ name, token:null, roomCode:null });
+    send({type:'join', create:true, name});
+  });
+  el('joinBtn').addEventListener('click', ()=>{
+    const name = el('joinName').value.trim();
+    const code = el('joinCode').value.trim().toUpperCase();
+    if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); return; }
+    if(!code){ setLandingStatus('Entre le code de la salle.', 'danger'); return; }
+    saveSession({ name, token:null, roomCode:null });
+    send({type:'join', roomCode: code, name});
+  });
+  el('joinCode').addEventListener('input', (e)=>{ e.target.value = e.target.value.toUpperCase(); });
+
+  el('startBtn').addEventListener('click', ()=> send({type:'start'}));
+  el('leaveLobbyBtn').addEventListener('click', leaveRoom);
+  el('leaveGameBtn').addEventListener('click', leaveRoom);
+  el('rematchBtn').addEventListener('click', ()=>{
+    el('gameoverOverlay').setAttribute('hidden','');
+    send({type:'start'});
+  });
+
+  function leaveRoom(){
+    send({type:'leave'});
+    clearSession();
+    myToken=null; myRoomCode=null; latestState=null;
+    showScreen('landing');
+  }
+
+  function buildFacePicker(){
+    const wrap = el('facePicker');
+    wrap.innerHTML='';
+    [2,3,4,5,6,1].forEach(f=>{
+      const b = document.createElement('button');
+      b.type='button'; b.className='face-btn'; b.dataset.face=f;
+      b.setAttribute('aria-label', 'Miser sur la face ' + (f===1?'as, fou':f));
+      PIP_LAYOUT[f].forEach(p=>{ b.dataset['p'+p]=''; });
+      for(let i=1;i<=9;i++){ const s=document.createElement('span'); s.className='pip p'+i; b.appendChild(s); }
+      b.addEventListener('click', ()=>{ selFace=f; refreshFacePicker(); });
+      wrap.appendChild(b);
+    });
+  }
+  function refreshFacePicker(){
+    document.querySelectorAll('.face-btn').forEach(b=> b.classList.toggle('selected', Number(b.dataset.face)===selFace));
+  }
+  buildFacePicker();
+
+  function totalDiceInPlay(){
+    if(!latestState) return 10;
+    return latestState.players.reduce((s,p)=> s + p.diceCount, 0);
+  }
+  function clampQty(){
+    const max = Math.max(1, totalDiceInPlay());
+    if(selQty>max) selQty=max;
+    if(selQty<1) selQty=1;
+    el('qtyDisplay').textContent = selQty;
+  }
+  el('qtyMinus').addEventListener('click', ()=>{ selQty=Math.max(1,selQty-1); el('qtyDisplay').textContent=selQty; });
+  el('qtyPlus').addEventListener('click', ()=>{ selQty=Math.min(totalDiceInPlay(),selQty+1); el('qtyDisplay').textContent=selQty; });
+
+  el('bidBtn').addEventListener('click', ()=> send({type:'bid', qty:selQty, face:selFace}));
+  el('liarBtn').addEventListener('click', ()=> send({type:'liar'}));
+  el('spotonBtn').addEventListener('click', ()=> send({type:'spoton'}));
+
+  function makeDieEl(value, cls){
+    const d=document.createElement('div');
+    d.className = cls || 'die';
+    PIP_LAYOUT[value].forEach(p=>{ d.dataset['p'+p]=''; });
+    if(value===1) d.classList.add('face1');
+    for(let i=1;i<=9;i++){ const s=document.createElement('span'); s.className='pip p'+i; d.appendChild(s); }
+    return d;
+  }
+  function makeMiniDie(revealedValue){
+    const d=document.createElement('div');
+    d.className = 'mini-die' + (revealedValue ? ' revealed':'');
+    const layout = revealedValue ? PIP_LAYOUT[revealedValue] : [1,3,5,7,9];
+    layout.forEach(p=>{ d.dataset['p'+p]=''; });
+    for(let i=1;i<=9;i++){ const s=document.createElement('span'); s.className='pip p'+i; d.appendChild(s); }
+    return d;
+  }
+
+  function renderYourDice(){
+    const row = el('youDiceRow');
+    row.innerHTML='';
+    myDice.forEach(v=> row.appendChild(makeDieEl(v)));
+    el('youCount').textContent = myDice.length + (myDice.length===1?' dé':' dés');
+  }
+
+  function render(){
+    if(!latestState) return;
+    const s = latestState;
+
+    if(s.phase==='lobby'){
+      showScreen('lobby');
+      el('roomCodeDisplay').textContent = s.code;
+      const isHost = s.hostId===myToken;
+      el('startBtn').hidden = !isHost;
+      el('startBtn').disabled = s.players.length < 2;
+      setLobbyStatus(isHost ? (s.players.length<2 ? 'En attente d\'au moins un marin de plus…' : 'Prêt à prendre la mer.') : 'En attente que le capitaine lance la partie…');
+      const list = el('crewList');
+      list.innerHTML='';
+      s.players.forEach(p=>{
+        const row=document.createElement('div'); row.className='crew-item';
+        const who=document.createElement('div'); who.className='who';
+        const dot=document.createElement('span'); dot.className='dot'+(p.connected?'':' off');
+        const name=document.createElement('span'); name.textContent=p.name;
+        who.appendChild(dot); who.appendChild(name);
+        if(p.id===s.hostId){ const tag=document.createElement('span'); tag.className='host-tag'; tag.textContent='Capitaine'; who.appendChild(tag); }
+        row.appendChild(who);
+        if(isHost && p.id!==s.hostId){
+          const kb=document.createElement('button'); kb.className='kick-btn'; kb.textContent='Renvoyer';
+          kb.addEventListener('click', ()=> send({type:'kick', playerId:p.id}));
+          row.appendChild(kb);
+        }
+        list.appendChild(row);
+      });
+      return;
+    }
+
+    showScreen('game');
+    if(s.phase!=='reveal') el('revealOverlay').setAttribute('hidden','');
+
+    const me = s.players.find(p=>p.id===myToken);
+    el('youName').textContent = me ? me.name : 'Toi';
+    if(me) el('youCount').textContent = me.diceCount + (me.diceCount===1?' dé':' dés');
+
+    const oppList = el('opponentsList');
+    oppList.innerHTML='';
+    s.players.filter(p=>p.id!==myToken).forEach(p=>{
+      const row=document.createElement('div');
+      row.className='opp-row'+(p.id===s.turnId?' turn':'')+(p.eliminated?' dead':'');
+      const name=document.createElement('div'); name.className='opp-name';
+      const dot=document.createElement('span'); dot.className='dot'+(p.connected?'':' off');
+      const txt=document.createElement('span'); txt.className='txt'; txt.textContent=p.name;
+      name.appendChild(dot); name.appendChild(txt);
+      const dice=document.createElement('div'); dice.className='opp-dice';
+      for(let i=0;i<p.diceCount;i++) dice.appendChild(makeMiniDie(0));
+      row.appendChild(name); row.appendChild(dice);
+      oppList.appendChild(row);
+    });
+
+    const ledger = el('ledger');
+    ledger.innerHTML='';
+    s.log.forEach(text=>{ const d=document.createElement('div'); d.textContent=text; ledger.appendChild(d); });
+    ledger.scrollTop = ledger.scrollHeight;
+
+    clampQty();
+    refreshFacePicker();
+
+    const myTurn = s.turnId===myToken && s.phase==='round';
+    el('bidBtn').disabled = !myTurn;
+    el('liarBtn').disabled = !myTurn || !s.currentBid;
+    el('spotonBtn').disabled = !myTurn || !s.currentBid;
+    el('qtyMinus').disabled = !myTurn;
+    el('qtyPlus').disabled = !myTurn;
+    document.querySelectorAll('.face-btn').forEach(b=> b.disabled = !myTurn);
+
+    if(s.phase==='round'){
+      const turnPlayer = s.players.find(p=>p.id===s.turnId);
+      if(myTurn){
+        setStatus(s.currentBid ? 'À toi de jouer — relance, ou lance un défi.' : 'À toi de jouer — ouvre les enchères.');
+      } else {
+        setStatus(turnPlayer ? `En attente de ${turnPlayer.name}…` : '');
+      }
+    } else if(s.phase==='reveal'){
+      setStatus('Les dés sont révélés…');
+    }
+
+    if(s.phase==='ended'){
+      const winner = s.players.find(p=>p.id===s.winnerId);
+      el('gameoverTitle').textContent = (s.winnerId===myToken) ? "Tu as gagné !" : "Davy Jones te réclame";
+      el('gameoverText').textContent = winner
+        ? (s.winnerId===myToken
+            ? "L'équipage repose sa coupe. Tu remportes la manche."
+            : `${winner.name} remporte la manche. Meilleure chance la prochaine fois.`)
+        : "La manche est terminée.";
+      const isHost = s.hostId===myToken;
+      el('rematchBtn').hidden = !isHost;
+      el('gameoverOverlay').removeAttribute('hidden');
+    } else {
+      el('gameoverOverlay').setAttribute('hidden','');
+    }
+  }
+
+  function showReveal(msg){
+    const s = latestState;
+    const grid = el('revealGrid');
+    grid.innerHTML='';
+    (s ? s.players : []).forEach(p=>{
+      const dice = msg.dice[p.id];
+      if(!dice) return;
+      const row=document.createElement('div'); row.className='reveal-row';
+      const name=document.createElement('div'); name.className='name'; name.textContent=p.name;
+      row.appendChild(name);
+      dice.forEach(v=> row.appendChild(makeMiniDie(v)));
+      grid.appendChild(row);
+    });
+    el('revealResult').textContent = msg.resultText;
+    el('revealOverlay').removeAttribute('hidden');
+  }
+
+  connect();
+})();
+</script>
+</body>
+</html>

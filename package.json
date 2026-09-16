@@ -1,0 +1,15 @@
+{
+  "name": "dead-mans-dice",
+  "version": "1.0.0",
+  "description": "Liar's Dice (as played aboard the Flying Dutchman) — self-hosted multiplayer for friends.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
