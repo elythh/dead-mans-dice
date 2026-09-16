@@ -75,7 +75,10 @@ h1{
 
 /* Landing */
 .panel{background:var(--bg-deep); border:1px solid var(--line); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;}
-.name-panel{max-width:360px; margin:0 auto;}
+.panel h2{font-family:"Pirata One", serif; font-size:1.3rem; margin:0; color:var(--gold-bright);}
+.name-panel{max-width:360px; margin:0 auto 16px;}
+.landing-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media (max-width:520px){ .landing-grid{grid-template-columns:1fr;} }
 label{font-size:0.85rem; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px;}
 input[type=text]{
   font-family:inherit; font-size:1.05rem; padding:8px 10px; border-radius:8px;
@@ -116,7 +119,11 @@ input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-off
 .open-rooms-empty{color:var(--ink-soft); font-style:italic; font-size:0.9rem; text-align:center;}
 
 /* Lobby */
-.room-hint{text-align:center; color:var(--ink-soft); font-size:0.9rem;}
+.room-code{
+  font-family:"Pirata One", serif; font-size:2.2rem; letter-spacing:0.12em; text-align:center;
+  color:var(--gold-bright); background:var(--bg-deep); border-radius:10px; padding:10px; border:1px dashed var(--line);
+}
+.room-hint{text-align:center; color:var(--ink-soft); font-size:0.9rem; margin-top:-6px;}
 .crew-list{display:flex; flex-direction:column; gap:8px; margin:14px 0;}
 .crew-item{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -300,7 +307,19 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
       <label>Ton nom
         <input type="text" id="playerName" maxlength="24" placeholder="Bootstrap Bill">
       </label>
-      <button class="btn raise" id="createBtn">Lever l'ancre</button>
+    </div>
+    <div class="landing-grid">
+      <div class="panel">
+        <h2>Créer un équipage</h2>
+        <button class="btn raise" id="createBtn">Lever l'ancre</button>
+      </div>
+      <div class="panel">
+        <h2>Rejoindre avec un code</h2>
+        <label>Code de la salle
+          <input type="text" id="joinCode" maxlength="4" placeholder="ABCD" style="text-transform:uppercase;">
+        </label>
+        <button class="btn raise" id="joinBtn">Monter à bord</button>
+      </div>
     </div>
     <p class="landing-status" id="landingStatus"></p>
     <div class="open-rooms">
@@ -312,7 +331,8 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
   <!-- Lobby -->
   <section class="card" id="screen-lobby" hidden>
     <h2 style="font-family:'Pirata One',serif; text-align:center; color:var(--gold-bright); margin-top:0;">L'équipage se rassemble</h2>
-    <p class="room-hint">Tes amis te rejoignent depuis la liste des équipages ouverts, sur l'accueil.</p>
+    <div class="room-code" id="roomCodeDisplay">----</div>
+    <p class="room-hint">Partage ce code — tes amis rejoignent depuis cette même page.</p>
     <div class="crew-list" id="crewList"></div>
     <div style="display:flex; gap:10px; justify-content:center;">
       <button class="btn raise" id="startBtn">Lancer la partie</button>
@@ -521,9 +541,12 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
   function attemptJoin(code){
     const name = el('playerName').value.trim();
     if(!name){ setLandingStatus('Choisis d\'abord un nom.', 'danger'); el('playerName').focus(); return; }
+    if(!code){ setLandingStatus('Entre le code de la salle.', 'danger'); return; }
     saveSession({ name, token:null, roomCode:null });
     send({type:'join', roomCode: code, name});
   }
+  el('joinBtn').addEventListener('click', ()=> attemptJoin(el('joinCode').value.trim().toUpperCase()));
+  el('joinCode').addEventListener('input', (e)=>{ e.target.value = e.target.value.toUpperCase(); });
 
   function renderOpenRooms(rooms){
     const list = el('openRoomsList');
@@ -719,6 +742,7 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
 
     if(s.phase==='lobby'){
       showScreen('lobby');
+      el('roomCodeDisplay').textContent = s.code;
       const isHost = s.hostId===myToken;
       el('startBtn').hidden = !isHost;
       el('startBtn').disabled = s.players.length < 2;
