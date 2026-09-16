@@ -505,6 +505,13 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
       renderYourDice();
     } else if(msg.type==='roomList'){
       renderOpenRooms(msg.rooms);
+    } else if(msg.type==='roomClosed'){
+      clearSession();
+      myToken=null; myRoomCode=null; latestState=null;
+      showScreen('landing');
+      el('chatPanel').hidden = true;
+      el('chatLog').innerHTML = '';
+      setLandingStatus(msg.message || 'L\'équipage est dissous.', 'danger');
     } else if(msg.type==='reveal'){
       showReveal(msg);
     } else if(msg.type==='error'){

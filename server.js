@@ -393,17 +393,33 @@ function handleChallengeMsg(ws, kind) {
 function handleLeave(ws) {
   const room = rooms.get(ws.roomCode);
   if (room) {
-    const player = room.players.get(ws.token);
-    if (player) {
-      player.connected = false;
-      player.ws = null;
-      room.addLog(`${player.name} descend sous le pont.`);
-      broadcastState(room);
+    if (room.phase === 'lobby' && ws.token === room.hostToken) {
+      closeLobby(room, ws.token);
+    } else {
+      const player = room.players.get(ws.token);
+      if (player) {
+        player.connected = false;
+        player.ws = null;
+        room.addLog(`${player.name} descend sous le pont.`);
+        broadcastState(room);
+      }
     }
   }
   ws.roomCode = null;
   ws.token = null;
   send(ws, { type: 'roomList', rooms: openRoomList() });
+}
+
+function closeLobby(room, leavingToken) {
+  clearTimeout(room.roundTimer);
+  rooms.delete(room.code);
+  for (const p of room.players.values()) {
+    if (p.token === leavingToken || !p.ws) continue;
+    send(p.ws, { type: 'roomClosed', message: 'Le capitaine a quitté — l\'équipage est dissous.' });
+    p.ws.roomCode = null;
+    p.ws.token = null;
+    send(p.ws, { type: 'roomList', rooms: openRoomList() });
+  }
 }
 
 function handleListRooms(ws) {
