@@ -60,6 +60,7 @@ class Room {
     this.turnToken = null;
     this.roundNum = 0;
     this.log = [];
+    this.chat = [];
     this.winnerToken = null;
     this.createdAt = Date.now();
     this.roundTimer = null;
@@ -85,6 +86,11 @@ class Room {
     if (this.log.length > 60) this.log.shift();
   }
 
+  addChat(id, name, text) {
+    this.chat.push({ id, name, text, t: Date.now() });
+    if (this.chat.length > 50) this.chat.shift();
+  }
+
   everyoneDisconnected() {
     for (const p of this.players.values()) if (p.connected) return false;
     return true;
@@ -101,6 +107,7 @@ class Room {
         ? { qty: this.currentBid.qty, face: this.currentBid.face, byId: this.currentBid.byToken }
         : null,
       log: this.log.slice(-40).map((l) => l.text),
+      chat: this.chat.slice(-50).map((c) => ({ id: c.id, name: c.name, text: c.text })),
       winnerId: this.winnerToken,
       players: this.order.map((t) => {
         const p = this.players.get(t);
@@ -371,6 +378,17 @@ function handleLeave(ws) {
   }
 }
 
+function handleChat(ws, msg) {
+  const room = rooms.get(ws.roomCode);
+  if (!room) return;
+  const player = room.players.get(ws.token);
+  if (!player) return;
+  const text = (typeof msg.text === 'string' ? msg.text : '').trim().slice(0, 200);
+  if (!text) return;
+  room.addChat(ws.token, player.name, text);
+  broadcastState(room);
+}
+
 const server = http.createServer((req, res) => {
   let reqPath = decodeURIComponent(req.url.split('?')[0]);
   if (reqPath === '/') reqPath = '/index.html';
@@ -403,6 +421,7 @@ wss.on('connection', (ws) => {
         case 'liar': handleChallengeMsg(ws, 'liar'); break;
         case 'spoton': handleChallengeMsg(ws, 'spoton'); break;
         case 'leave': handleLeave(ws); break;
+        case 'chat': handleChat(ws, msg); break;
         default: break;
       }
     } catch (e) {

@@ -177,6 +177,28 @@ input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-off
 .ledger::-webkit-scrollbar{width:8px;}
 .ledger::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
 
+.chat-panel{display:flex; flex-direction:column; gap:8px;}
+.chat-title{font-family:"Pirata One", serif; font-size:1.1rem; margin:0; color:var(--gold-bright); text-align:center;}
+.chat-log{
+  display:flex; flex-direction:column; gap:5px;
+  max-height:140px; overflow-y:auto; padding-right:4px;
+}
+.chat-log::-webkit-scrollbar{width:8px;}
+.chat-log::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+.chat-msg{font-size:0.92rem; line-height:1.35; word-break:break-word;}
+.chat-name{font-weight:700; color:var(--sea-bright);}
+.chat-msg.mine .chat-name{color:var(--gold-bright);}
+.chat-text{color:var(--ink);}
+.chat-empty{color:var(--ink-soft); font-style:italic; font-size:0.9rem;}
+.chat-form{display:flex; gap:8px;}
+.chat-form input{
+  flex:1 1 auto; min-width:0;
+  font-family:inherit; font-size:1rem; padding:8px 10px; border-radius:8px;
+  border:1px solid var(--line); background:var(--bg-deep); color:var(--ink);
+}
+.chat-form input:focus-visible{outline:2px solid var(--gold-bright); outline-offset:1px;}
+.chat-form .btn{padding:8px 16px; flex-shrink:0;}
+
 .status-bar{padding:10px 16px; font-style:italic; color:var(--ink-soft); min-height:1.4em; text-align:center;}
 .status-bar[data-tone="danger"]{color:var(--bad); font-style:normal; font-weight:600;}
 .status-bar[data-tone="good"]{color:var(--good); font-style:normal; font-weight:600;}
@@ -328,6 +350,15 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="card chat-panel" id="chatPanel" hidden>
+    <h2 class="chat-title">Discussion d'équipage</h2>
+    <div class="chat-log" id="chatLog" aria-live="polite"></div>
+    <form class="chat-form" id="chatForm">
+      <input type="text" id="chatInput" maxlength="200" placeholder="Écris un mot à l'équipage…" autocomplete="off">
+      <button type="submit" class="btn plain">Envoyer</button>
+    </form>
   </section>
 
   <footer>Hommage auto-hébergé à la scène du jeu de dés du menteur à bord du Hollandais Volant — inspiré de, mais non affilié à, Pirates des Caraïbes de Disney.</footer>
@@ -490,6 +521,37 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     clearSession();
     myToken=null; myRoomCode=null; latestState=null;
     showScreen('landing');
+    el('chatPanel').hidden = true;
+    el('chatLog').innerHTML = '';
+  }
+
+  el('chatForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const input = el('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    send({type:'chat', text});
+    input.value = '';
+  });
+
+  function renderChat(s){
+    const log = el('chatLog');
+    const chat = s.chat || [];
+    log.innerHTML = '';
+    if(chat.length===0){
+      const empty = document.createElement('div'); empty.className='chat-empty';
+      empty.textContent = 'Aucun message pour l\'instant.';
+      log.appendChild(empty);
+    } else {
+      chat.forEach(c=>{
+        const row=document.createElement('div'); row.className='chat-msg'+(c.id===myToken?' mine':'');
+        const name=document.createElement('span'); name.className='chat-name'; name.textContent=c.name+' : ';
+        const text=document.createElement('span'); text.className='chat-text'; text.textContent=c.text;
+        row.appendChild(name); row.appendChild(text);
+        log.appendChild(row);
+      });
+    }
+    log.scrollTop = log.scrollHeight;
   }
 
   function buildFacePicker(){
@@ -611,6 +673,9 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
   function render(){
     if(!latestState) return;
     const s = latestState;
+
+    el('chatPanel').hidden = false;
+    renderChat(s);
 
     if(s.phase==='lobby'){
       showScreen('lobby');
