@@ -57,7 +57,7 @@ body{
   display:flex;
   justify-content:center;
 }
-.wrap{width:100%; max-width:900px; display:flex; flex-direction:column; gap:18px;}
+.wrap{width:100%; max-width:640px; display:flex; flex-direction:column; gap:18px;}
 header{text-align:center; display:flex; flex-direction:column; gap:4px;}
 h1{
   font-family:"Pirata One", serif; font-size:clamp(2.1rem, 7vw, 3rem); margin:0;
@@ -275,22 +275,11 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
 .rules-toggle{align-self:center; margin:6px auto 0; display:block; background:none; border:1px solid var(--line); color:var(--ink-soft); border-radius:999px; padding:4px 14px; font-family:inherit; font-size:0.85rem; cursor:pointer;}
 .rules-toggle:hover{border-color:var(--gold); color:var(--gold-bright);}
 
-/* Scale up for desktop monitors — the layout above is tuned for phone width and
-   otherwise ends up a small card floating in a lot of empty screen. */
+/* Scale the whole page up on desktop monitors, same as browser zoom — the
+   layout is tuned for phone width and otherwise stays that size on a big
+   screen, everything (text, dice, buttons, padding) proportionally small. */
 @media (min-width: 860px){
-  :root{ font-size:18px; }
-  body{ padding-block:48px; }
-  .card{ padding:28px 32px; }
-  .controls{ padding:20px 26px 26px; }
-  .die{ width:52px; height:52px; padding:7px; }
-  .die .pip{ width:10px; height:10px; }
-  .mini-die{ width:27px; height:27px; padding:4px; }
-  .mini-die .pip{ width:4px; height:4px; }
-  .bid-die{ width:40px; height:40px; padding:6px; }
-  .bid-die .pip{ width:7px; height:7px; }
-  .face-btn{ width:46px; height:46px; padding:6px; }
-  .face-btn .pip{ width:7px; height:7px; }
-  .qty-stepper button{ width:40px; height:40px; font-size:1.4rem; }
+  body{ zoom:1.4; }
 }
 </style>
 </head>
