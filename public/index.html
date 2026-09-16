@@ -139,6 +139,11 @@ input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-off
 .mini-die.revealed .pip{background:var(--die-pip); opacity:0;}
 .mini-die.revealed[data-p1] .p1, .mini-die.revealed[data-p2] .p2, .mini-die.revealed[data-p3] .p3, .mini-die.revealed[data-p4] .p4,
 .mini-die.revealed[data-p5] .p5, .mini-die.revealed[data-p6] .p6, .mini-die.revealed[data-p7] .p7, .mini-die.revealed[data-p8] .p8, .mini-die.revealed[data-p9] .p9{opacity:1;}
+.mini-die.revealed.match{
+  outline:2px solid var(--gold-bright);
+  outline-offset:2px;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25), 0 0 0 3px color-mix(in srgb, var(--gold) 22%, transparent);
+}
 
 .ledger{
   padding:12px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
@@ -194,6 +199,8 @@ input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-off
 .overlay .card{max-width:460px; width:100%; text-align:center;}
 .overlay .card h2{font-family:"Pirata One", serif; font-size:1.8rem; margin:0 0 8px; color:var(--gold-bright);}
 .overlay .card p{color:var(--ink-soft); line-height:1.5;}
+.reveal-bid{margin:6px 0 0; color:var(--ink-soft); font-size:0.95rem;}
+.reveal-bid b{color:var(--gold-bright);}
 .reveal-grid{display:flex; flex-direction:column; gap:8px; margin:14px 0; text-align:left;}
 .reveal-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
 .reveal-row .name{min-width:100px; font-weight:700; font-family:"Pirata One", serif;}
@@ -294,6 +301,7 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
 <div class="overlay" id="revealOverlay" hidden>
   <div class="card">
     <h2>Les dés sont dévoilés</h2>
+    <p class="reveal-bid" id="revealBid"></p>
     <div class="reveal-grid" id="revealGrid"></div>
     <p id="revealResult"></p>
   </div>
@@ -474,9 +482,9 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     for(let i=1;i<=9;i++){ const s=document.createElement('span'); s.className='pip p'+i; d.appendChild(s); }
     return d;
   }
-  function makeMiniDie(revealedValue){
+  function makeMiniDie(revealedValue, matches){
     const d=document.createElement('div');
-    d.className = 'mini-die' + (revealedValue ? ' revealed':'');
+    d.className = 'mini-die' + (revealedValue ? ' revealed':'') + (matches ? ' match':'');
     const layout = revealedValue ? PIP_LAYOUT[revealedValue] : [1,3,5,7,9];
     layout.forEach(p=>{ d.dataset['p'+p]=''; });
     for(let i=1;i<=9;i++){ const s=document.createElement('span'); s.className='pip p'+i; d.appendChild(s); }
@@ -588,6 +596,9 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
 
   function showReveal(msg){
     const s = latestState;
+    const bidFace = msg.bid.face;
+    const isMatch = (v)=> v===bidFace || (bidFace!==1 && v===1);
+    el('revealBid').innerHTML = 'Mise à vérifier : <b>' + msg.bid.qty + ' × ' + faceLabel(bidFace) + '</b>';
     const grid = el('revealGrid');
     grid.innerHTML='';
     (s ? s.players : []).forEach(p=>{
@@ -596,7 +607,7 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
       const row=document.createElement('div'); row.className='reveal-row';
       const name=document.createElement('div'); name.className='name'; name.textContent=p.name;
       row.appendChild(name);
-      dice.forEach(v=> row.appendChild(makeMiniDie(v)));
+      dice.forEach(v=> row.appendChild(makeMiniDie(v, isMatch(v))));
       grid.appendChild(row);
     });
     el('revealResult').textContent = msg.resultText;
