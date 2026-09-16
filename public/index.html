@@ -150,6 +150,26 @@ input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-off
   box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25), 0 0 0 3px color-mix(in srgb, var(--gold) 12%, transparent);
 }
 
+.bid-banner{
+  display:flex; flex-direction:column; gap:4px;
+  padding:12px 18px;
+  background:color-mix(in srgb, var(--gold) 10%, var(--bg-deep));
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+}
+.bid-banner[hidden]{display:none;}
+.bid-banner-label{font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft);}
+.bid-banner-main{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.bid-die{
+  width:32px; height:32px; border-radius:7px; background:var(--die-face); flex-shrink:0;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15), 0 3px 0 rgba(0,0,0,0.25);
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); padding:5px;
+}
+.bid-die .pip{width:6px;height:6px;border-radius:50%;background:var(--die-pip); align-self:center; justify-self:center; opacity:0;}
+.bid-die[data-p1] .p1, .bid-die[data-p2] .p2, .bid-die[data-p3] .p3, .bid-die[data-p4] .p4,
+.bid-die[data-p5] .p5, .bid-die[data-p6] .p6, .bid-die[data-p7] .p7, .bid-die[data-p8] .p8, .bid-die[data-p9] .p9{opacity:1;}
+.bid-banner-value{font-family:"Pirata One", serif; font-size:1.5rem; color:var(--gold-bright); flex:1 1 auto;}
+.bid-banner-by{font-size:0.85rem; color:var(--ink-soft); font-style:italic; margin-left:auto;}
+
 .ledger{
   padding:12px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
   max-height:130px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; font-size:0.92rem; color:var(--ink-soft);
@@ -197,6 +217,7 @@ input[type=text]:focus-visible{outline:2px solid var(--gold-bright); outline-off
 .face-btn.selected{border-color:var(--gold-bright); background:color-mix(in srgb, var(--gold) 18%, var(--bg-deep)); box-shadow:0 0 0 2px color-mix(in srgb, var(--gold) 40%, transparent);}
 .face-btn.selected .pip{background:var(--gold-bright);}
 .face-btn:disabled, .qty-stepper button:disabled{opacity:0.35;}
+.face-btn.too-low{opacity:0.35;}
 .face-btn:focus-visible, .qty-stepper button:focus-visible, .btn:focus-visible{outline:2px solid var(--gold-bright); outline-offset:2px;}
 .action-row{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
 
@@ -273,6 +294,14 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
   <section id="screen-game" hidden>
     <div class="card" style="padding:0; overflow:hidden;">
       <div class="opponents" id="opponentsList"></div>
+      <div class="bid-banner" id="bidBanner" hidden>
+        <span class="bid-banner-label" id="bidBannerLabel">Mise actuelle</span>
+        <div class="bid-banner-main">
+          <div class="bid-die" id="bidBannerDie"></div>
+          <span class="bid-banner-value" id="bidBannerValue"></span>
+        </div>
+        <span class="bid-banner-by" id="bidBannerBy"></span>
+      </div>
       <div class="ledger" id="ledger" aria-live="polite"></div>
       <div class="status-bar" id="statusBar" aria-live="polite"></div>
       <div class="you-row">
@@ -350,6 +379,24 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
   let latestState = null;
   let myDice = [];
   let selQty = 1, selFace = 2;
+  let lastBidKey = null;
+  let isMyTurnNow = false;
+
+  const FACE_ORDER = [2,3,4,5,6,1];
+  function minimalRaise(cur){
+    if(!cur) return { qty:1, face:2 };
+    if(cur.face!==1){
+      const idx = FACE_ORDER.indexOf(cur.face);
+      return { qty:cur.qty, face:FACE_ORDER[idx+1] };
+    }
+    return { qty:cur.qty+1, face:2 };
+  }
+  function isValidRaiseLocal(qty, face, cur){
+    if(!cur) return qty>=1;
+    if(qty>cur.qty) return true;
+    if(qty===cur.qty && rank(face)>rank(cur.face)) return true;
+    return false;
+  }
 
   function wsUrl(){
     const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -459,7 +506,14 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     });
   }
   function refreshFacePicker(){
-    document.querySelectorAll('.face-btn').forEach(b=> b.classList.toggle('selected', Number(b.dataset.face)===selFace));
+    const cur = latestState && latestState.currentBid;
+    document.querySelectorAll('.face-btn').forEach(b=>{
+      const f = Number(b.dataset.face);
+      b.classList.toggle('selected', f===selFace);
+      const tooLow = cur ? !isValidRaiseLocal(selQty, f, cur) : false;
+      b.classList.toggle('too-low', tooLow);
+      b.disabled = !isMyTurnNow || tooLow;
+    });
   }
   buildFacePicker();
 
@@ -467,14 +521,51 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     if(!latestState) return 10;
     return latestState.players.reduce((s,p)=> s + p.diceCount, 0);
   }
+  function minQty(){
+    const cur = latestState && latestState.currentBid;
+    return cur ? cur.qty : 1;
+  }
+  function anyRaisePossible(cur){
+    if(!cur) return true;
+    const max = totalDiceInPlay();
+    if(max>cur.qty) return true;
+    if(max===cur.qty) return cur.face!==1;
+    return false;
+  }
+  function ensureValidFace(){
+    const cur = latestState && latestState.currentBid;
+    if(cur && !isValidRaiseLocal(selQty, selFace, cur)){
+      const next = FACE_ORDER.find(f=> isValidRaiseLocal(selQty, f, cur));
+      if(next) selFace = next;
+    }
+  }
+  function updateStepperDisabled(){
+    el('qtyMinus').disabled = !isMyTurnNow || selQty<=minQty();
+    el('qtyPlus').disabled = !isMyTurnNow || selQty>=totalDiceInPlay();
+  }
   function clampQty(){
     const max = Math.max(1, totalDiceInPlay());
+    const min = Math.min(minQty(), max);
     if(selQty>max) selQty=max;
-    if(selQty<1) selQty=1;
+    if(selQty<min) selQty=min;
     el('qtyDisplay').textContent = selQty;
+    ensureValidFace();
+    refreshFacePicker();
+    updateStepperDisabled();
   }
-  el('qtyMinus').addEventListener('click', ()=>{ selQty=Math.max(1,selQty-1); el('qtyDisplay').textContent=selQty; });
-  el('qtyPlus').addEventListener('click', ()=>{ selQty=Math.min(totalDiceInPlay(),selQty+1); el('qtyDisplay').textContent=selQty; });
+  el('qtyMinus').addEventListener('click', ()=>{
+    selQty=Math.max(minQty(),selQty-1);
+    el('qtyDisplay').textContent=selQty;
+    ensureValidFace();
+    refreshFacePicker();
+    updateStepperDisabled();
+  });
+  el('qtyPlus').addEventListener('click', ()=>{
+    selQty=Math.min(totalDiceInPlay(),selQty+1);
+    el('qtyDisplay').textContent=selQty;
+    refreshFacePicker();
+    updateStepperDisabled();
+  });
 
   el('bidBtn').addEventListener('click', ()=> send({type:'bid', qty:selQty, face:selFace}));
   el('liarBtn').addEventListener('click', ()=> send({type:'liar'}));
@@ -502,6 +593,19 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
     row.innerHTML='';
     myDice.forEach(v=> row.appendChild(makeDieEl(v)));
     el('youCount').textContent = myDice.length + (myDice.length===1?' dé':' dés');
+  }
+
+  function updateBidBanner(s){
+    const banner = el('bidBanner');
+    const cur = s.currentBid;
+    if(!cur){ banner.hidden = true; return; }
+    banner.hidden = false;
+    const slot = el('bidBannerDie');
+    slot.innerHTML='';
+    slot.appendChild(makeDieEl(cur.face, 'bid-die'));
+    el('bidBannerValue').textContent = cur.qty + ' × ' + faceLabel(cur.face);
+    const bidder = s.players.find(p=>p.id===cur.byId);
+    el('bidBannerBy').textContent = cur.byId===myToken ? "C'est ta mise" : (bidder ? 'par ' + bidder.name : '');
   }
 
   function render(){
@@ -557,26 +661,37 @@ footer{text-align:center; font-size:0.8rem; color:var(--ink-soft); opacity:0.75;
       oppList.appendChild(row);
     });
 
+    updateBidBanner(s);
+
     const ledger = el('ledger');
     ledger.innerHTML='';
     s.log.forEach(text=>{ const d=document.createElement('div'); d.textContent=text; ledger.appendChild(d); });
     ledger.scrollTop = ledger.scrollHeight;
 
-    clampQty();
-    refreshFacePicker();
-
     const myTurn = s.turnId===myToken && s.phase==='round';
-    el('bidBtn').disabled = !myTurn;
+    isMyTurnNow = myTurn;
+
+    const bidKey = s.currentBid ? (s.currentBid.qty+':'+s.currentBid.face+':'+s.currentBid.byId) : null;
+    if(bidKey !== lastBidKey){
+      lastBidKey = bidKey;
+      const m = minimalRaise(s.currentBid);
+      selQty = m.qty; selFace = m.face;
+    }
+    clampQty();
+
+    const canRaise = anyRaisePossible(s.currentBid);
+    el('bidBtn').disabled = !myTurn || !canRaise;
     el('liarBtn').disabled = !myTurn || !s.currentBid;
     el('spotonBtn').disabled = !myTurn || !s.currentBid;
-    el('qtyMinus').disabled = !myTurn;
-    el('qtyPlus').disabled = !myTurn;
-    document.querySelectorAll('.face-btn').forEach(b=> b.disabled = !myTurn);
 
     if(s.phase==='round'){
       const turnPlayer = s.players.find(p=>p.id===s.turnId);
       if(myTurn){
-        setStatus(s.currentBid ? 'À toi de jouer — relance, ou lance un défi.' : 'À toi de jouer — ouvre les enchères.');
+        if(!canRaise){
+          setStatus('Mise maximale déjà atteinte — lance un défi.');
+        } else {
+          setStatus(s.currentBid ? 'À toi de jouer — relance, ou lance un défi.' : 'À toi de jouer — ouvre les enchères.');
+        }
       } else {
         setStatus(turnPlayer ? `En attente de ${turnPlayer.name}…` : '');
       }
