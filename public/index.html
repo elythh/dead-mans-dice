@@ -47,8 +47,11 @@
   --shadow:rgba(0,0,0,0.55); --good:#7fd8c4; --bad:#e6817c; --offline:#a99a72;
 }
 *{box-sizing:border-box;}
+html{ background:var(--bg); }
 body{
   margin:0;
+  min-height:100vh;
+  min-height:100dvh;
   background: radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 60%), var(--bg);
   color:var(--ink);
   font-family:"Crimson Text", Georgia, "Times New Roman", serif;
